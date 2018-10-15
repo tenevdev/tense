@@ -1,0 +1,83 @@
+diff --git a/include/linux/sched/tense.h b/include/linux/sched/tense.h
+index ed0a349a9585..1ca4a902062c 100644
+--- a/include/linux/sched/tense.h
++++ b/include/linux/sched/tense.h
+@@ -26,13 +26,13 @@ struct tense_task {
+ 	u32			slower;
+ 
+ 	u64			next_io_duration;
+-	
++
+ 	struct list_head	list;
+ };
+ 
+ struct tense_operations {
+ 	u64  (*update_curr) (u64 delta_exec);
+-	void (*after_task_tick) (struct task_struct *curr);
++	bool (*after_task_tick) (struct task_struct *curr, struct list_head **tasks);
+ };
+ 
+ extern struct tense_operations *tense;
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 4f240a0903b9..7528e6496005 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -3080,6 +3080,9 @@ void scheduler_tick(void)
+ 	struct rq *rq = cpu_rq(cpu);
+ 	struct task_struct *curr = rq->curr;
+ 	struct rq_flags rf;
++	struct list_head *tense_tasks = NULL;
++	struct tense_task *tense_task;
++	bool activate;
+ 
+ 	sched_clock_tick();
+ 
+@@ -3090,9 +3093,22 @@ void scheduler_tick(void)
+ 	cpu_load_update_active(rq);
+ 	calc_global_load_tick(rq);
+ 
++	activate = tense->after_task_tick(curr, &tense_tasks);
++	if (activate) {
++		list_for_each_entry(tense_task, tense_tasks, list) {
++			activate_task(rq, tense_task->task_struct,
++				ENQUEUE_RESTORE | ENQUEUE_NOCLOCK);
++		}
++	} else {
++		list_for_each_entry(tense_task, tense_tasks, list) {
++			deactivate_task(rq, tense_task->task_struct,
++				DEQUEUE_SAVE | DEQUEUE_NOCLOCK);
++		}
++		resched_curr(rq);
++	}
++
+ 	rq_unlock(rq, &rf);
+ 
+-	tense->after_task_tick(curr);
+ 
+ 	perf_event_task_tick();
+ 
+diff --git a/kernel/sched/tense.c b/kernel/sched/tense.c
+index 1dd39d2f6619..765b9fb69b6c 100644
+--- a/kernel/sched/tense.c
++++ b/kernel/sched/tense.c
+@@ -3,14 +3,18 @@
+ 
+ #include "sched.h"
+ 
++static LIST_HEAD(no_tasks);
++
+ static u64 nop_update_curr(u64 delta_exec)
+ {
+ 	return delta_exec;
+ }
+ 
+-static void nop_after_task_tick (struct task_struct *curr)
++static bool nop_after_task_tick (struct task_struct *curr, struct list_head **tasks)
+ {
+-	return;
++	// no sync by default
++	*tasks = &no_tasks;
++	return false;
+ }
+ 
+ // Initialize tense to do nothing

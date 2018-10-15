@@ -1,0 +1,42 @@
+# How to work with the tests
+
+Most tests are simply a C programs that have an associated target in
+CMakeLists.txt. You run them and observe what happens. This is not great.
+
+There are some neat (scary) macros in the `util` directory. Those let you write
+clear tests with assertions. There are a couple of examples on how to use those
+macros in the `single` directory.
+
+```
+// file: single/jump_lock.c
+
+#include "../util/macros.h"
+
+routine(child,
+	lock()
+	unlock()
+)
+
+main(
+	lock()
+	spawn(child)
+	jump(100)
+	unlock()
+	join(child)
+	time_range(100, 105)
+	// real_time_lt(5)
+)
+
+```
+
+This reads much nicer than a similar test not using the macros. The real-time
+assertions aren't implemented yet, but they would be nice to have.
+
+To compile a test using the macros run something like:
+
+```
+gcc test.c -L../../cmake-build-debug -ltense -lpthread -o test
+```
+
+When there are enough tests with useful assertions, the plan is to automate
+the execution a bit more.

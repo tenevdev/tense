@@ -1,0 +1,15 @@
+# Load balancing
+
+See `Documentation/scheduler/sched-domains.txt`
+
+scheduler_tick() -> trigger_load_balance()
+SCHED_SOFTIRQ -> run_rebalance_domains()->rebalance_domains()
+
+# Reschedule task on a runqueue
+
+resched_curr - mark rq's current task 'to be rescheduled now'.
+
+Useful if you need to preempt a task on a CPU that is running ahead. If a CPU
+that is running behind sees the need for sync first it can call resched_curr
+across CPUs to trigger their schedulers early.
+

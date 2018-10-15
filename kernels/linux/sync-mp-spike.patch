@@ -1,0 +1,56 @@
+diff --git a/include/linux/sched/tense.h b/include/linux/sched/tense.h
+index ed0a349a9585..11be4b5dc816 100644
+--- a/include/linux/sched/tense.h
++++ b/include/linux/sched/tense.h
+@@ -26,13 +26,13 @@ struct tense_task {
+ 	u32			slower;
+ 
+ 	u64			next_io_duration;
+-	
++
+ 	struct list_head	list;
+ };
+ 
+ struct tense_operations {
+ 	u64  (*update_curr) (u64 delta_exec);
+-	void (*after_task_tick) (struct task_struct *curr);
++	bool (*after_task_tick) (struct task_struct *curr);
+ };
+ 
+ extern struct tense_operations *tense;
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 4f240a0903b9..1d7bc2bb087c 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -3090,9 +3090,13 @@ void scheduler_tick(void)
+ 	cpu_load_update_active(rq);
+ 	calc_global_load_tick(rq);
+ 
++	if(tense->after_task_tick(curr)) {
++		deactivate_task(rq, curr, DEQUEUE_SAVE | DEQUEUE_NOCLOCK);
++		resched_curr(rq);
++	}
++
+ 	rq_unlock(rq, &rf);
+ 
+-	tense->after_task_tick(curr);
+ 
+ 	perf_event_task_tick();
+ 
+diff --git a/kernel/sched/tense.c b/kernel/sched/tense.c
+index 1dd39d2f6619..658ec4c82148 100644
+--- a/kernel/sched/tense.c
++++ b/kernel/sched/tense.c
+@@ -8,9 +8,10 @@ static u64 nop_update_curr(u64 delta_exec)
+ 	return delta_exec;
+ }
+ 
+-static void nop_after_task_tick (struct task_struct *curr)
++static bool nop_after_task_tick (struct task_struct *curr)
+ {
+-	return;
++	// no sync by default
++	return false;
+ }
+ 
+ // Initialize tense to do nothing

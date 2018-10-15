@@ -1,0 +1,51 @@
+Outdated
+
+Tense timing API
+
+Primitives
+
+tense_blink(uint nanos)
+	Simulate nanos nanoseconds of execution. Useful for executing for a period
+	of time given by a performance model of non-existing software
+
+tense_warp_set(int scale)
+	Simulate time-scaled execution. A method that would normally take 1s to run
+	should take ~ scale seconds to run when called after tense_warp_set
+
+	Implementation note: The simulation either acts as if the process was given 
+	higher priority leading to longer timeslices or as if the process' vruntime
+	is scaled leading to more or less frequent timeslices of unmodified duration
+
+Warp stack
+
+tense_warp_push(int scale)
+tense_warp_pop()
+	Convenience API for restoring the previous warp scale when nested warping is
+	used. Calling tense_warp_push(2) and later tense_warp_push(4) without a pop
+	in between results in an effective scale of 8. This is useful for warping
+	arbitrary methods regardless of the caller's warp scale.
+
+
+Tense reporting API
+
+tense_time_all(const char * id)
+tense_time_current(const char * id)
+tense_time(int tid, const char * id)
+	Store the vruntime of all, the current, or for the given tid. The optional
+	identifier is meant for easier analysis of the data.
+
+tense_time_report(const char * dst)
+	Write all timing information recorded so far to the given destination.
+
+Tense setup
+
+tense_supported()
+	Check if the system has Tense support. Checks the kernel module is loaded,
+	the system has constant TSC among other requirements.
+
+tense_init()
+	Initialize Tense. Must be called before using the timing API. Sets up the
+	memory area for blink and warp operations.
+
+
+Tense performance modelling adapters

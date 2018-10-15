@@ -1,0 +1,13 @@
+PARSEC experiment
+
+compress stage in dedup
+
+1/ Measure execution time with normal compression n_t and compression stage time n_t_s
+2/ Measure execution time with fast compression f_t and compression stage time f_t_s
+
+stage speedup is tdf = n_t_s / f_t_s
+
+3/ Measure execution time with normal compression sped up by tdf.
+
+
+ranking  t_rank ferret
