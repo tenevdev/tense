@@ -1,0 +1,4 @@
+ javac -h . HelloTense.java 
+ gcc -fPIC -I"$JAVA_HOME/include" -I"$JAVA_HOME/include/linux" -I"../core" -shared HelloTense.c -L../core/cmake-build-debug -ltense -o libtense_java.so
+ java -Djava.library.path=. HelloTense
+

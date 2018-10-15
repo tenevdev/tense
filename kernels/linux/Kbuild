@@ -1,0 +1,2 @@
+obj-m := tense.o
+tense-objs := main.o

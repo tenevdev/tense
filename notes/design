@@ -1,0 +1,48 @@
+Tense simulation: abstraction and guarantees
+
+Tense uses CFS as an abstraction for virtual time synchronisation. This means
+the virtual time of all processes is thought to be equal (when scaled by
+priority) at any point in time.
+
+Tense tries to interfere as little as possible with the normal execution of the
+profiled program once it's initialised. It takes actions to ensure the simulated
+timing behaviour respects synchronisation
+
+Issues with vruntime scaling
+
+At first glance the schedule sequence produced by vruntime scaling satisfies the
+requirement that each thread gets CPU time proportional to its scaling factor.
+However, there is a problem with the accuracy of this approach to simulation.
+Consider a process that receives timeslices of 4ms and a block that takes 10ms
+to execute in real user time. During the execution of that block there will be
+two or three context switches involving the process. If that execution is
+simulated at twice the speed the number of context switches stays the same as
+the block still takes 10ms to complete and the timeslice of 4ms is not scaled.
+The only thing vruntime scaling does is possibly provide this process with the
+ability to run two times more frequently. If this block were running at twice
+the speed in reality however, it would take 5ms and incur 1 or 2 context switches
+during its execution. For CPU-bound processes it might be enough to take the
+context switch overhead into account. In the presence of I/O the extra context
+switch might lead to severe inaccuracy if caches are invalidated for example.
+
+Issues with timeslice scaling
+
+The solution to the problem with vruntime scaling is to scale the timeslice
+instead. A timeslice of 8ms for a 10ms-block is considered equivalent to 4ms for
+a 5ms-block. Consider now we want to simulate at speed much faster than reality.
+For a 1000 times faster the timeslice would be 4 seconds long. This doesn't play
+nicely with the idea to leave timeslices uninterrupted by new scaling events.
+For example, if the fast block finishes just at the start of a 4-second
+timeslice, the rest of the code would run for a very long time while it should
+have been preempted after only a few milliseconds.
+
+	Things to consider about timeslice scaling
+
+	- Do it independently of weight which depends on nice values and combine the
+	two when computing the product for a timeslice
+	- Issue warnings if the timeslice is supposed to be smaller than the min.
+	granularity of CFS
+
+Does system time count in vruntime? How to deal with the overhead?
+
+Measure for experiment with major page faults (Baltas p.94).

@@ -1,0 +1,46 @@
+Timekeeper comparison
+
+"TimeKeeper is seemingly
+more effective at keeping the experiment synchronized when
+the timeslice length is 3ms rather than 300ms. At the time
+of this writing we are unsure of the underlying cause for this
+difference, and are working at additional instrumentation in
+an effort to uncover an understandable explanation."
+
+"Figure 4 shows us a CDF when we have an experiment size
+of 10 LXCs (where 5 LXCs have a TDF of 10, and 5 LXCs
+have a TDF of 1), and we vary the timeslice interval lengths.
+In general, TimeKeeper is able to keep the experiment virtual
+time in sync, but we noticed when the timeslice interval
+is .3ms that it did not perform as well. These results correspond
+with what we found in Table 1 (where the hrtimers
+were not as accurate at a granularity of .3ms as opposed to
+higher granularities)"
+
+No evaluation of changing TDF during execution even though it is supported by the API
+New TDF switching experiment
+
+Processes (threads) try to compute as many digits of Pi as possible while competing with
+each other. In each process the digit computation is periodically interrupted by other
+activity which is not time-scaled. For example - more computation of Pi but such that it
+doesn't count. Each process is configured in a way such that a main controller decides
+whether the computed digits should count or not - say 20% of calls count. Then it takes a
+uniformly distributed sample of how many digits to compute in the next call. The only
+difference is that calls that count are time scaled by a different factor for each process.
+After the processes run for a fixed amount of time we expect the digits that count for each
+process to be relative to their TDFs.
+
+From Baltas: "Grau et al. introduced the time-virtualised emulation environment
+[54], which dynamically changes the TDF according to some load metric to better balance
+the emulation’s resource utilisation. Nevertheless, in both cases the passing of time is altered
+at the level of a virtual machine and for all its components. This results into poor granularity
+in the level of alteration and restricts these techniques from uses beyond network emulation
+like extending or accelerating the duration of an application method to identify its performance
+effect."
+
+"However, our focus
+here is on fitting such techniques to the particular characteristics of the multicore virtual time
+execution, i.e. the generally tight coupling between real and virtual time, the control of the
+simulation at the thread level, the scheduling of threads in virtual timeslices, the existence
+of profiling and state changing instruments, the dependence on real time events (like I/O
+operations) and the high level at which VEX is functioning"
